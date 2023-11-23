@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload de Diretórios</title>
+</head>
+<body>
+    <h1>Upload de Diretórios</h1>
+    <form id="uploadDirectory">
+        <label for="directoryInput">Selecione um diretório para upload:</label>
+        <input type="file" id="directoryInput" webkitdirectory directory multiple>
+        <button type="button" onclick="uploadDirectory()">Enviar</button>
+    </form>
+
+    <!--
+    <form id="uploadFile">
+        <label for="directoryInput">Upload arquivo</label>
+        <input id="upload-file" name="files" type="file" multiple>
+        <button type="button" onclick="uploadFile()">Enviar</button>
+    </form>
+    -->
+
+    
+    <div id="websocketEvents" style="position: fixed; bottom: 10px; right: 10px; padding: 10px; background-color: #eee;">
+        WebSocket Events:
+    </div>
+    <script>
+        function uploadDirectory() {
+            const directoryInput = document.getElementById('directoryInput');
+            if (directoryInput.files.length === 0) {
+                alert('Selecione pelo menos um diretório para upload.');
+                return;
+            }
+            console.log(directoryInput.files)
+
+            const formData = new FormData();
+            for (const file of directoryInput.files) {
+                formData.append('files', file);
+            }
+            fetch('http://localhost:8080/uploads/upload', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Resposta do servidor:', data);
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+            });
+        }
+
+        function uploadFile() {
+            const directoryInput = document.getElementById('directoryInput');
+            if (directoryInput.files.length === 0) {
+                alert('Selecione pelo menos um diretório para upload.');
+                return;
+            }
+            console.log(directoryInput.files)
+
+            const formData = new FormData();
+            for (const file of directoryInput.files) {
+                formData.append('files', file);
+            }
+            fetch('http://localhost:8080/upload', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Resposta do servidor:', data);
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+            });
+        }
+
+        // Abre uma conexão WebSocket
+        const socket = new WebSocket('ws://localhost:8000/ws');
+
+        // Define o que fazer quando a conexão WebSocket é aberta
+        socket.addEventListener('open', (event) => {
+            console.log('Conexão WebSocket aberta:', event);
+        });
+
+        /*
+        // Define o que fazer quando uma mensagem é recebida do servidor WebSocket
+        socket.addEventListener('message', (event) => {
+            const websocketEventsElement = document.getElementById('websocketEvents');
+            websocketEventsElement.innerHTML += `<p>${event.data}</p>`;
+        });
+
+        // Define o que fazer quando ocorre um erro na conexão WebSocket
+        socket.addEventListener('error', (error) => {
+            console.error('Erro na conexão WebSocket:', error);
+        });
+
+        // Define o que fazer quando a conexão WebSocket é fechada
+        socket.addEventListener('close', (event) => {
+            console.log('Conexão WebSocket fechada:', event);
+        });
+        */
+    </script>
+</body>
+</html>
