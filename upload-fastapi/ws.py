@@ -7,7 +7,7 @@ from fastapi import (
     Query,
     WebSocket,
     WebSocketException,
-    status,
+    status
 )
 from fastapi.responses import HTMLResponse
 

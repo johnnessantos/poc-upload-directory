@@ -1,14 +1,22 @@
-from typing import Annotated
-from fastapi import FastAPI, File, UploadFile, APIRouter, Request, status, HTTPException, WebSocket
-from fastapi.responses import StreamingResponse
-
-from fastapi.responses import HTMLResponse
-from uuid import uuid4
-from typing import Optional
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, field_validator
-
+from json import dumps
+import asyncio
 import logging
+from typing import Annotated, Optional
+from uuid import uuid4
+
+from fastapi import (
+    APIRouter,
+    FastAPI,
+    File,
+    HTTPException,
+    Request,
+    UploadFile,
+    WebSocket,
+    status
+)
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse, StreamingResponse
+from pydantic import BaseModel, field_validator
 
 logging.basicConfig(
     format='%(levelname)s %(asctime)s %(name)s.%(filename)s:%(lineno)d == %(message)s',
@@ -27,8 +35,10 @@ app.add_middleware(
     allow_headers=['*'],
 )
 
+
 def generate_upload_id() -> str:
     return str(uuid4())
+
 
 def raise_files(files):
     logging.info([
@@ -57,6 +67,7 @@ def check_valid_file(content_type: str, file_path: str) -> bool:
     logger.warning(f'Invalid file:{file_path} for content_type:{content_type}')
     return False
 
+
 class UploadRequestDTO(BaseModel):
     content_type: str
     file_paths: list[str]
@@ -76,22 +87,27 @@ class UploadRequestDTO(BaseModel):
         }
     }
 
+
 DATABASE = {
     'upload': {},
     'media': {}
 }
 
+
 def upload_insert_one(id: str, data: dict) -> bool:
     DATABASE['upload'].update({'fake': data})
     return True
 
+
 def upload_find_one(id: str) -> Optional[dict]:
     return DATABASE['upload'].get(id)
+
 
 class UploadFileReponseDTO(BaseModel):
     file_path: str
     completed: bool = False
     errors: list[str] = []
+
 
 class UploadResponseDTO(BaseModel):
     upload_id: str
@@ -115,14 +131,16 @@ async def start_upload(upload: UploadRequestDTO) -> UploadResponseDTO:
         files=[
             UploadFileReponseDTO(
                 file_path=file,
-                errors=[] if check_valid_file(upload.content_type, file) else ['invalid_file']
+                errors=[] if check_valid_file(upload.content_type, file) else [
+                    'invalid_file']
             )
             for file in upload.file_paths
         ]
     )
 
     if upload_response.is_valid_upload():
-        upload_insert_one(upload_response.upload_id, upload_response.model_dump())
+        upload_insert_one(upload_response.upload_id,
+                          upload_response.model_dump())
         logger.info(f'Starting upload:{upload_response.model_dump()}')
     else:
         upload_response.cancel_upload()
@@ -135,6 +153,7 @@ async def start_upload(upload: UploadRequestDTO) -> UploadResponseDTO:
         )
 
     return upload_response
+
 
 @router.post(path='/report', tags=['Uploads'])
 async def upload_report(upload_id: str) -> UploadResponseDTO:
@@ -150,15 +169,14 @@ async def upload_report(upload_id: str) -> UploadResponseDTO:
 
     return upload_response
 
-import asyncio
-from json import dumps
+
 async def generate_events(request: Request):
     while request.is_disconnected:
         data = dumps(upload_find_one('fake') or {})
         yield f'data:{data}\n\n'
         await asyncio.sleep(1)
     logger.debug(f'Finishing stream events')
-   
+
 
 @app.get('/sse/')
 def sse(request: Request):
@@ -167,6 +185,7 @@ def sse(request: Request):
         media_type='text/event-stream'
     )
 
+
 @router.websocket('/{upload_id}/ws')
 async def ws_upload(websocket: WebSocket, upload_id: str):
     await websocket.accept()
@@ -174,7 +193,8 @@ async def ws_upload(websocket: WebSocket, upload_id: str):
         # data = await websocket.receive_text()
         await websocket.send_json(upload_find_one(upload_id))
 
-@router.post(path='/files',tags=['Uploads'])
+
+@router.post(path='/files', tags=['Uploads'])
 async def create_files(files: Annotated[list[bytes], File()]):
     raise_files(files)
     return {'file_sizes': [len(file) for file in files]}
@@ -188,11 +208,12 @@ async def create_upload_files(files: list[UploadFile]):
         for file_uploaded in upload_report['files']:
             if file_uploaded['file_path'] == file.filename:
                 file_path = file_uploaded['file_path']
-                file_uploaded['completed']=True
-                logger.info(f'update {file.filename} file_path:{file_path} result:{file_uploaded}')
+                file_uploaded['completed'] = True
+                logger.info(
+                    f'update {file.filename} file_path:{file_path} result:{file_uploaded}')
         upload_insert_one('fake', upload_report)
         await asyncio.sleep(3)
-    
+
     await asyncio.sleep(3)
     upload_report['status'] = 'completed'
     upload_insert_one('fake', upload_report)
