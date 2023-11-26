@@ -24,7 +24,8 @@
     
     <h1>Recebendo Eventos do Servidor com SSE</h1>
     <div id="eventContainer">
-        Último Evento: <span id="lastEvent"></span>
+        Último Evento: <span id="lastEvent"></span></br>
+        <span id="progressBar"></span>
     </div>
 
 
@@ -95,8 +96,21 @@
                 eventSource.onmessage = function (event) {
                     console.log('event_data:', event.data);
                     const lastEventElement = document.getElementById('lastEvent');
+                    const progressBarElement = document.getElementById('progressBar');
                     lastEventElement.textContent = event.data;
-                    if(JSON.parse(event.data).status=='completed'){
+
+                    const event_data = JSON.parse(event.data);
+                    let countCompleted = 0;
+                    const totalFiles = event_data['files'].length + 1;
+                    
+                    for (const uploadFile of event_data.files){
+                        if(uploadFile.completed) {countCompleted += 1}
+                    }
+                    if(event_data.status=='completed') {countCompleted += 1}
+                    
+                    const percentCompleted = 100*(countCompleted/totalFiles);
+                    progressBarElement.innerHTML = '<h2>Progresso:</h2><progress value="'+percentCompleted+'" max="100">'+percentCompleted+' %</progress>'
+                    if(event_data.status=='completed'){
                         console.log('finish upload_id:', upload_id)
                         sessionStorage.removeItem('upload_id');
                         eventSource.close();
