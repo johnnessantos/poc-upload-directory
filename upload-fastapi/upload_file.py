@@ -1,19 +1,10 @@
-from json import dumps
 import asyncio
 import logging
+from json import dumps
 from typing import Annotated, Optional
 from uuid import uuid4
 
-from fastapi import (
-    APIRouter,
-    FastAPI,
-    File,
-    HTTPException,
-    Request,
-    UploadFile,
-    WebSocket,
-    status
-)
+from fastapi import APIRouter, FastAPI, File, HTTPException, Request, UploadFile, WebSocket, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel, field_validator
@@ -178,12 +169,18 @@ async def generate_events(request: Request):
     logger.debug(f'Finishing stream events')
 
 
-@app.get('/sse/')
-def sse(request: Request):
+@app.get('/{upload_id}/sse/')
+def sse(request: Request, upload_id: str):
+    logger.info(f'Starting monitoring upload_id:{upload_id}')
     return StreamingResponse(
         generate_events(request),
         media_type='text/event-stream'
     )
+
+
+@app.get('/')
+def index():
+    return {'status': 'ok'}
 
 
 @router.websocket('/{upload_id}/ws')

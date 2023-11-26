@@ -90,7 +90,7 @@
         function start_events(upload_id){
             console.log('Iniciando o upload:', upload_id);
             if (upload_id){
-                const eventSource = new EventSource('http://localhost:8080/sse/');
+                const eventSource = new EventSource('http://localhost:8080/'+upload_id+'/sse/');
 
                 eventSource.onmessage = function (event) {
                     console.log('event_data:', event.data);
