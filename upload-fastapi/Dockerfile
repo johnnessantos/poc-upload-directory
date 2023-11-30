@@ -11,10 +11,4 @@ ENV PYTHONPATH="${PYTHONPATH}:$PWD"
 RUN python -m venv venv && \
     python -m pip install --no-cache-dir -r requirements.txt
 
-
-FROM gcr.io/distroless/python3
-
-COPY --from=builder /app /app
-
 #CMD ["uvicorn", "upload_file:app", "--host", "0.0.0.0", "--port", "80", "--proxy-headers"]
-CMD ["app/upload_file.py"]

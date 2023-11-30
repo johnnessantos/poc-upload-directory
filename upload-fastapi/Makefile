@@ -12,3 +12,7 @@ ws-run:
 deploy-frontend:
 	@sudo cp index.html /var/www/html/index.html
 	@sudo systemctl restart apache2
+
+
+build:
+	@docker compose up --build -d

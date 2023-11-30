@@ -45,11 +45,13 @@
                 file_paths.push(file.webkitRelativePath)
             }
             const payload = {content_type: 'images', file_paths: file_paths};
+            var upload_id = null;
 
             const requestOptions = {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'mode': 'no-cors', 
                 },
                 body: JSON.stringify(payload)
             };
@@ -64,27 +66,28 @@
             })
             .then(data => {
                 console.log('Resposta da preparação para o upload:', data);
-                sessionStorage.setItem('upload_id', data['upload_id']);
-                start_events(data['upload_id']);
+                upload_id = data['upload_id'];
+                sessionStorage.setItem('upload_id', upload_id);
+                start_events(upload_id);
+
+                const formData = new FormData();
+                for (const file of directoryInput.files) {
+                    formData.append('files', file);
+                }
+                fetch('http://localhost:8080/uploads/'+upload_id+'/upload', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Resposta do servidor:', data);
+                })
+                .catch(error => {
+                    console.error('Erro:', error);
+                });
             })
             .catch(error => {
                 console.error('Erro ao enviar requisição:', error.message);
-            });
-
-            const formData = new FormData();
-            for (const file of directoryInput.files) {
-                formData.append('files', file);
-            }
-            fetch('http://localhost:8080/uploads/upload', {
-                method: 'POST',
-                body: formData,
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Resposta do servidor:', data);
-            })
-            .catch(error => {
-                console.error('Erro:', error);
             });
         }
 
